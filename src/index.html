@@ -1,0 +1,709 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; media-src 'self' data: blob:; connect-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>HER</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="titlebar">
+        <div class="brand">
+          <span class="brand-mark">h</span>
+          <span>her</span>
+        </div>
+        <div class="window-controls">
+          <button id="minimizeButton" aria-label="최소화">—</button>
+          <button id="closeButton" aria-label="닫기">×</button>
+        </div>
+      </header>
+
+      <main class="layout">
+        <aside class="sidebar">
+          <div class="sidebar-top">
+            <div class="sidebar-heading">
+              <span class="eyebrow">CHATS</span>
+              <h2>대화방</h2>
+            </div>
+            <div class="sidebar-utilities">
+              <div class="token-usage" aria-label="누적 토큰 사용량">
+                <span>토큰 사용량</span>
+                <b><strong id="usageDisplay">0</strong></b>
+              </div>
+              <button id="appSettingsButton" class="icon-button gear-button" title="사용자·앱·API 설정" aria-label="사용자·앱·API 설정">⚙</button>
+            </div>
+          </div>
+
+          <div class="room-create-actions">
+            <button id="addFriendButton" class="room-create-button" type="button">
+              <b>＋</b><span>친구 추가<small>새 친구와 1:1 대화</small></span>
+            </button>
+            <button id="addGroupButton" class="room-create-button" type="button">
+              <b>#</b><span>단톡 만들기<small>기존 친구 2~6명 선택</small></span>
+            </button>
+          </div>
+
+          <div id="roomList" class="room-list" aria-label="대화방 목록"></div>
+        </aside>
+
+        <section class="chat">
+          <header class="chat-header">
+            <div>
+              <h1 id="chatName">서윤</h1>
+              <p>
+                <span id="genderLabel">여성</span> ·
+                <span id="presenceText">자기 할 일 하는 중</span>
+              </p>
+              <small id="nudgeStatus" class="nudge-status"></small>
+              <small id="liveConversationStatus" class="live-conversation-status hidden" aria-live="polite"></small>
+            </div>
+            <div class="chat-actions">
+              <button id="liveConversationButton" class="text-button live-conversation-button" title="음성 통화처럼 계속 대화하기">
+                통화 시작
+              </button>
+              <button id="settingsButton" class="text-button" title="친구 설정">친구 설정</button>
+              <button id="searchButton" class="text-button" title="대화 검색">검색</button>
+              <button id="memoryButton" class="text-button" title="기억 관리">기억</button>
+              <button id="testNudgeButton" class="text-button" title="기다리지 않고 선톡 동작 확인">
+                선톡 테스트
+              </button>
+            </div>
+          </header>
+
+          <div id="searchBar" class="search-bar hidden">
+            <input id="searchInput" type="search" placeholder="대화 내용 검색" aria-label="대화 내용 검색" />
+            <span id="searchCount">0개</span>
+            <button id="closeSearchButton" type="button">닫기</button>
+          </div>
+
+          <div id="errorBanner" class="error-banner hidden">
+            <div>
+              <b id="errorMessage">AI 연결에 문제가 생겼어.</b>
+              <small id="errorDetail"></small>
+            </div>
+            <button id="retryButton" type="button">다시 시도</button>
+          </div>
+
+          <div id="emptyState" class="empty-state">
+            <div class="avatar large" id="emptyAvatar">ㅅ</div>
+            <h2 id="emptyName">서윤</h2>
+            <p>먼저 아무 말이나 걸어봐.<br />대화는 여기서부터 계속 기억돼.</p>
+          </div>
+
+          <div id="messageList" class="message-list" aria-live="polite"></div>
+
+          <button id="newMessageButton" class="new-message-button hidden" type="button">
+            새 메시지 ↓
+          </button>
+
+          <div id="typingIndicator" class="typing-indicator hidden">
+            <span></span><span></span><span></span>
+          </div>
+
+          <div class="composer-wrap">
+            <div id="replyPreview" class="reply-preview hidden">
+              <span><b id="replyPreviewName"></b><small id="replyPreviewText"></small></span>
+              <button id="cancelReplyButton" type="button" aria-label="답장 취소">×</button>
+            </div>
+            <form id="composer" class="composer">
+              <textarea id="messageInput" rows="1" maxlength="2000" placeholder="메시지 입력"></textarea>
+              <button id="sendButton" type="submit" aria-label="전송">
+                <svg viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M4 12 20 4l-4 16-4.5-6.5L4 12Zm7.5 1.5L20 4" />
+                </svg>
+              </button>
+            </form>
+            <small id="voiceSynthesisStatus" class="composer-status hidden" aria-live="polite"></small>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <div id="modalBackdrop" class="modal-backdrop hidden">
+      <section class="settings-modal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">WHO ARE THEY?</span>
+            <h2 id="settingsTitle">친구 설정</h2>
+            <p id="friendSettingsDescription" class="modal-description">친구의 성격과 1:1 대화 설정을 바꿔.</p>
+          </div>
+          <button id="closeSettingsButton" class="icon-button" aria-label="설정 닫기">×</button>
+        </div>
+
+        <form id="settingsForm">
+          <div class="settings-guide">
+            <b>처음엔 이름과 ‘어떤 친구야?’만 정해도 충분해.</b>
+            <small>프리셋으로 시작한 뒤 필요한 부분만 펼쳐서 조정할 수 있어.</small>
+          </div>
+          <section class="preset-section">
+            <div class="preset-heading">
+              <span>
+                <b>기본 프리셋</b>
+                <small>고르면 아래 설정을 채워줘. 저장하기 전에는 적용되지 않아.</small>
+              </span>
+            </div>
+            <div class="preset-grid">
+              <button type="button" class="preset-card" data-preset="casual_female">
+                <b>편한 여사친</b>
+                <small>장난 많고 솔직함</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="dry_male">
+                <b>무심한 남사친</b>
+                <small>말은 짧지만 은근히 챙김</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="childhood">
+                <b>다정한 소꿉친구</b>
+                <small>기억이 많고 선톡도 잦음</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="fandom">
+                <b>덕질 메이트</b>
+                <small>취향 얘기에 텐션 높음</small>
+              </button>
+              <button type="button" class="preset-card" data-preset="slow_burn">
+                <b>은근한 썸 가능 친구</b>
+                <small>친구처럼 시작해 천천히</small>
+              </button>
+            </div>
+          </section>
+
+          <section class="settings-section settings-primary">
+            <div class="section-heading">
+              <b>친구의 기본 설정</b>
+              <small>AI가 누구이며 사용자와 어떤 사이인지 정해.</small>
+            </div>
+          <div class="form-grid two">
+            <label>
+              <span>이름</span>
+              <input name="name" maxlength="16" required />
+            </label>
+            <label>
+              <span>성별</span>
+              <select name="gender">
+                <option>여성</option>
+                <option>남성</option>
+                <option>논바이너리</option>
+                <option>설정하지 않음</option>
+              </select>
+            </label>
+          </div>
+
+          <label>
+            <span class="label-with-action">
+              <span>어떤 친구야?</span>
+              <button id="characterExampleButton" type="button">예시 넣기</button>
+            </span>
+            <textarea
+              name="character"
+              rows="4"
+              maxlength="600"
+              placeholder="예: 최근 취미 모임에서 알게 된 사용자보다 어린 후배. 아직 존댓말을 쓰며 조심스러운 편이다. 음악과 전시를 좋아하고 친해질수록 장난이 늘어난다."
+            ></textarea>
+            <small>알게 된 계기, 나이 차이, 현재 말투, 성격과 취향을 구체적으로 적어. 여기 적은 내용은 아래 보조 성향보다 우선해.</small>
+          </label>
+          </section>
+
+          <details class="settings-disclosure" open>
+            <summary>
+              <span><b>성격과 관계</b><small>말투, 거리감과 반응 성향을 세밀하게 조정해.</small></span>
+              <span class="disclosure-state" aria-hidden="true"></span>
+            </summary>
+            <div class="disclosure-body">
+          <div class="settings-subheading"><b>현재 관계</b><small>대화를 지우면 두 값은 중립 상태로 돌아가.</small></div>
+          <div class="slider-grid relationship-sliders">
+            <label>
+              <span>친밀도</span>
+              <select name="closeness" data-discrete-setting="true">
+                <option value="10">거리가 있음</option><option value="30">알아가는 중</option>
+                <option value="50">조금 친함</option><option value="70">편하고 가까움</option>
+                <option value="90">매우 가까움</option>
+              </select>
+              <small data-setting-description="closeness"></small>
+            </label>
+            <label>
+              <span>신뢰</span>
+              <select name="trust" data-discrete-setting="true">
+                <option value="10">경계함</option><option value="30">조심스럽게 믿음</option>
+                <option value="50">어느 정도 믿음</option><option value="70">믿고 의지함</option>
+                <option value="90">깊이 신뢰함</option>
+              </select>
+              <small data-setting-description="trust"></small>
+            </label>
+          </div>
+
+          <div class="settings-subheading"><b>기본 성향</b><small>‘어떤 친구야?’에 구체적인 설명이 있으면 그 설명을 우선해.</small></div>
+          <div class="slider-grid personality-sliders">
+            <label>
+              <span>장난기</span>
+              <select name="playfulness" data-discrete-setting="true">
+                <option value="10">거의 없음</option><option value="30">적음</option>
+                <option value="50">보통</option><option value="70">많음</option><option value="90">매우 많음</option>
+              </select>
+              <small data-setting-description="playfulness"></small>
+            </label>
+            <label>
+              <span>다정함</span>
+              <select name="warmth" data-discrete-setting="true">
+                <option value="10">무뚝뚝함</option><option value="30">담백함</option>
+                <option value="50">보통</option><option value="70">다정함</option><option value="90">매우 다정함</option>
+              </select>
+              <small data-setting-description="warmth"></small>
+            </label>
+            <label>
+              <span>직설적임</span>
+              <select name="bluntness" data-discrete-setting="true">
+                <option value="10">매우 조심스러움</option><option value="30">조심스러움</option>
+                <option value="50">솔직한 편</option><option value="70">직설적임</option><option value="90">매우 직설적임</option>
+              </select>
+              <small data-setting-description="bluntness"></small>
+            </label>
+          </div>
+
+          <div class="settings-subheading"><b>대화 방식</b><small>말투를 자동으로 두기 애매하면 존댓말이나 반말로 고정해.</small></div>
+          <div class="form-grid three">
+            <label>
+              <span>답장 템포</span>
+              <select name="replyPace">
+                <option value="fast">빠르게</option>
+                <option value="natural">자연스럽게</option>
+                <option value="slow">느긋하게</option>
+              </select>
+            </label>
+            <label>
+              <span>대화 말투</span>
+              <select name="speechStyle">
+                <option value="auto">설명에 맞게 자동</option>
+                <option value="casual">반말</option>
+                <option value="polite">존댓말</option>
+              </select>
+              <small>자동은 나이 차이와 ‘어떤 친구야?’ 설명을 우선해.</small>
+            </label>
+            <label class="toggle-row compact-toggle">
+              <span>
+                <b>연애 감정 허용</b>
+                <small>끄면 연애 감정이나 플러팅 없이 친구로 지내.</small>
+              </span>
+              <input type="checkbox" name="romanceAllowed" />
+            </label>
+          </div>
+            </div>
+          </details>
+
+          <details id="proactiveSettingsDisclosure" class="settings-disclosure">
+            <summary>
+              <span><b>먼저 연락하기</b><small>이 친구가 답장을 기다리지 않고 선톡할지 정해.</small></span>
+              <span id="proactiveSettingsSummary" class="setting-summary-badge">사용</span>
+            </summary>
+            <div class="disclosure-body">
+              <label class="toggle-row proactive-toggle">
+                <span>
+                  <b>선톡 허용</b>
+                  <small>끄면 예정 시간을 보류하고, 다시 켰을 때 남은 시간부터 이어가.</small>
+                </span>
+                <input type="checkbox" name="proactiveEnabled" />
+              </label>
+              <div id="proactiveOptions" class="dependent-options">
+                <div class="slider-grid single-slider">
+                  <label>
+                    <span>선톡 빈도</span>
+                    <select name="initiative" data-discrete-setting="true">
+                      <option value="10">거의 안 함</option><option value="30">드물게</option>
+                      <option value="50">가끔</option><option value="70">자주</option><option value="90">매우 자주</option>
+                    </select>
+                    <small data-setting-description="initiative"></small>
+                  </label>
+                </div>
+                <small>실제 선톡은 최근 대화, 답하지 않은 메시지, 방해 금지 시간과 하루 토큰 한도도 함께 고려해.</small>
+              </div>
+            </div>
+          </details>
+
+          <details id="voiceSettingsDisclosure" class="settings-disclosure voice-settings">
+            <summary>
+              <span><b>로컬 음성 (선택)</b><small>한국어 말풍선과 별도로 일본어 낭독문을 만들어 Style-Bert-VITS2로 재생해.</small></span>
+              <span id="voiceSettingsSummary" class="setting-summary-badge">사용 안 함</span>
+            </summary>
+            <div class="disclosure-body">
+            <div class="toggle-group">
+              <label class="toggle-row">
+                <span><b>답장 음성 생성</b><small>AI 답장마다 일본어 낭독문도 함께 만들어. 출력 토큰이 조금 늘 수 있어.</small></span>
+                <input type="checkbox" name="voiceEnabled" />
+              </label>
+              <label class="toggle-row">
+                <span><b>새 음성 자동 재생</b><small>새 답장과 선톡의 음성을 자동 재생해. 기본적으로 HER 창이 활성 상태일 때만 소리가 나.</small></span>
+                <input type="checkbox" name="voiceAutoPlay" />
+              </label>
+              <label class="toggle-row">
+                <span><b>음성 준비 후 말풍선 표시</b><small>새 AI 답장을 바로 띄우지 않고 음성 합성이 끝날 때까지 기다려. 합성에 실패하면 텍스트만 표시해.</small></span>
+                <input type="checkbox" name="voiceRevealAfterSynthesis" />
+              </label>
+              <label class="toggle-row">
+                <span><b>자동 음성 말걸기</b><small>사용자 메시지가 없어도 설정한 간격마다 짧은 음성을 먼저 재생해. 계속 연결되는 음성 통화 기능은 아니야.</small></span>
+                <input type="checkbox" name="ambientVoiceEnabled" />
+              </label>
+            </div>
+            <div id="ambientVoiceOptions" class="ambient-options hidden">
+              <div class="form-grid two">
+                <label>
+                  <span>말 거는 간격</span>
+                  <select name="ambientVoiceFrequency">
+                    <option value="quiet">조용함 · 8~15분</option>
+                    <option value="normal">보통 · 3~8분</option>
+                    <option value="chatty">수다스러움 · 1분 30초~4분</option>
+                  </select>
+                </label>
+                <label>
+                  <span>쉬기 전 자동 발화 수</span>
+                  <input name="ambientMaxConsecutive" type="number" min="1" max="5" step="1" />
+                  <small>AI 답장 한 묶음을 1회로 세고, 설정한 횟수 뒤에는 15~30분 쉬어.</small>
+                </label>
+              </div>
+              <div class="toggle-group">
+                <label class="toggle-row">
+                  <span><b>답이 없어도 다시 말하기</b><small>켜면 위 횟수까지 다음 간격에 다시 말해. 끄면 한 번 말한 뒤 15~30분 쉬어.</small></span>
+                  <input type="checkbox" name="ambientContinueUnanswered" />
+                </label>
+                <label class="toggle-row">
+                  <span><b>자동 발화를 채팅에도 남기기</b><small>끄면 소리만 재생하고 대화 화면에는 말풍선을 만들지 않아.</small></span>
+                  <input type="checkbox" name="ambientSaveTranscript" />
+                </label>
+              </div>
+              <small>켜면 선톡, 답장 음성 생성과 자동 재생도 함께 켜져. 창이 비활성일 때 소리를 낼지는 앱·API 설정의 백그라운드 소리 설정을 따라.</small>
+              <small>방해 금지 시간과 하루 자동 대화 토큰 한도도 적용돼.</small>
+            </div>
+            <input type="hidden" name="voiceLanguage" value="ja" />
+            <div class="form-grid two">
+              <label>
+                <span>목소리</span>
+                <select name="voiceModelId"><option value="0">목소리 불러오기 필요</option></select>
+                <input type="hidden" name="voiceSpeakerId" value="0" />
+              </label>
+              <label>
+                <span>스타일</span>
+                <select name="voiceStyle"><option>Neutral</option></select>
+              </label>
+            </div>
+            <div class="form-grid two">
+              <label>
+                <span>스타일 강도</span>
+                <input name="voiceStyleWeight" type="number" min="0" max="20" step="0.1" />
+              </label>
+              <label>
+                <span>말하기 길이 배율</span>
+                <input name="voiceLength" type="number" min="0.5" max="2" step="0.05" />
+                <small>높을수록 더 느리게 읽어.</small>
+              </label>
+            </div>
+            <div class="voice-connection-row">
+              <button id="loadVoiceModelsButton" type="button">목소리 목록 불러오기</button>
+              <button id="previewVoiceButton" type="button">미리듣기</button>
+              <button id="openVoiceDiagnosticsButton" type="button">음성 로그</button>
+              <small id="voiceConnectionStatus">앱·API 설정의 로컬 서버에 연결해.</small>
+            </div>
+            <small>음성 로그에는 문제 확인을 위해 화면 문장과 실제 일본어 낭독문이 이 PC에 기록돼.</small>
+            </div>
+          </details>
+
+          <div class="modal-actions">
+            <div class="modal-action-group">
+              <button id="deleteFriendButton" type="button" class="danger-button">친구 삭제</button>
+              <button id="clearButton" type="button" class="danger-button">대화·기억 초기화</button>
+            </div>
+            <button type="submit" class="primary-button">친구 저장</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="groupModalBackdrop" class="modal-backdrop hidden">
+      <section class="settings-modal group-modal" role="dialog" aria-modal="true" aria-labelledby="groupSettingsTitle">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">GROUP CHAT</span>
+            <h2 id="groupSettingsTitle">단톡 설정</h2>
+            <p id="groupSettingsDescription" class="modal-description">기존 친구들을 하나의 대화방으로 묶어.</p>
+          </div>
+          <button id="closeGroupSettingsButton" class="icon-button" type="button" aria-label="단톡 설정 닫기">×</button>
+        </div>
+        <form id="groupSettingsForm">
+          <div class="settings-guide">
+            <b>이미 만든 친구를 2명 이상 골라 단톡으로 묶어.</b>
+            <small>각 친구의 성격·말투·음성 설정은 1:1 대화와 동일하게 사용해.</small>
+          </div>
+          <section class="settings-section">
+            <div class="section-heading"><b>방 기본 설정</b><small>표시할 이름과 참여할 친구를 골라.</small></div>
+            <label><span>단톡 이름</span><input name="name" maxlength="40" placeholder="예: 영화 얘기방" /></label>
+            <div class="section-heading participant-heading"><b>참여 친구</b><small id="groupParticipantCount">0명 선택 · 2~6명</small></div>
+            <div id="groupParticipantList" class="participant-list"></div>
+          </section>
+          <details id="groupAutonomyDisclosure" class="settings-disclosure">
+            <summary>
+              <span><b>친구들끼리 자율 대화</b><small>사용자가 말하지 않아도 친구들이 대화를 이어가.</small></span>
+              <span id="groupAutonomySummary" class="setting-summary-badge">사용 안 함</span>
+            </summary>
+            <div class="disclosure-body">
+            <label class="toggle-row">
+              <span><b>자율 대화 사용</b><small>켜면 설정한 간격마다 한 명이 대화를 시작하고, 다른 친구들이 짧게 이어서 반응해.</small></span>
+              <input type="checkbox" name="autonomousEnabled" />
+            </label>
+            <div id="groupAutonomyOptions" class="form-grid two dependent-options">
+              <label><span>새 대화 시작 간격</span><select name="autonomousFrequency"><option value="quiet">조용함 · 8~15분</option><option value="normal">보통 · 3~8분</option><option value="chatty">활발 · 1분 30초~4분</option></select></label>
+              <label><span>쉬기 전 최대 발화 수</span><input name="autonomousMaxTurns" type="number" min="1" max="20" value="6" /><small>친구 메시지 하나를 1회로 세고, 도달하면 10~30분 쉬어.</small></label>
+            </div>
+            <small>방해 금지 시간과 하루 자동 대화 토큰 한도를 적용해.</small>
+            </div>
+          </details>
+          <div class="modal-actions">
+            <button id="deleteGroupButton" class="danger-button" type="button">단톡 삭제</button>
+            <button class="primary-button" type="submit">단톡 저장</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="appModalBackdrop" class="modal-backdrop hidden">
+      <section class="settings-modal app-settings-modal" role="dialog" aria-modal="true" aria-labelledby="appSettingsTitle">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">APP & CONNECTION</span>
+            <h2 id="appSettingsTitle">사용자·앱·API 설정</h2>
+          </div>
+          <button id="closeAppSettingsButton" class="icon-button" aria-label="앱 설정 닫기">×</button>
+        </div>
+
+        <form id="appSettingsForm">
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>내 프로필</b>
+              <small>모든 친구와 단톡에서 공통으로 참고해. 친구가 대화 중 따로 기억한 내용과는 구분돼.</small>
+            </div>
+            <div class="form-grid two">
+              <label>
+                <span>불릴 이름</span>
+                <input name="userName" maxlength="50" placeholder="비워두면 이름을 정하지 않음" />
+              </label>
+              <label>
+                <span>성별</span>
+                <select name="userGender">
+                  <option>여성</option><option>남성</option><option>논바이너리</option><option>설정하지 않음</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span>나이</span>
+              <input name="userAge" type="number" min="0" max="120" placeholder="선택 사항" />
+              <small>0 또는 빈칸이면 프롬프트에 보내지 않아. 친구와의 나이 차이와 말투를 판단할 때 참고해.</small>
+            </label>
+            <label>
+              <span>AI에게 알려줄 내 정보</span>
+              <textarea name="userDescription" rows="4" maxlength="600" placeholder="예: 서울에서 일하는 직장인. 게임과 영화, 야식을 좋아하고 과하게 위로받는 말투는 부담스러워한다."></textarea>
+              <small>취향, 하는 일, 대화에서 좋아하거나 싫어하는 반응처럼 모든 친구가 알아야 할 내용을 적어.</small>
+            </label>
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>AI 모델 연결</b>
+              <small>OpenAI API로 대화를 생성해.</small>
+            </div>
+            <div class="provider-fields">
+              <label>
+                <span>OpenAI API 키</span>
+                <input name="apiKey" type="password" placeholder="비워두면 기존 키 유지" />
+                <small id="apiKeyStatus">현재 데모 모드</small>
+              </label>
+              <button id="clearApiKeyButton" type="button" class="inline-danger-button">
+                저장된 API 키 삭제
+              </button>
+              <label>
+                <span>사용 모델</span>
+                <input name="model" list="openAiModels" />
+                <small>GPT-5.6 Sol·Terra·Luna만 예상 비용을 계산해. 다른 모델 ID도 요청에는 사용할 수 있어.</small>
+              </label>
+              <label>
+                <span>자율·통화형 대화 모델</span>
+                <input name="autonomousModel" list="openAiModels" placeholder="gpt-5.6-luna" />
+                <small>단톡 자율 대화와 1:1 통화형 연속 대화에 사용해 비용을 낮춰.</small>
+              </label>
+              <datalist id="openAiModels">
+                <option value="gpt-5.6-sol"></option>
+                <option value="gpt-5.6-terra"></option>
+                <option value="gpt-5.6-luna"></option>
+              </datalist>
+            </div>
+
+            <div class="form-grid three">
+              <label>
+                <span>월간 토큰 한도</span>
+                <input name="monthlyTokenLimit" type="number" min="0" step="1000" />
+                <small>0이면 제한 없음</small>
+              </label>
+              <label>
+                <span>하루 자동 대화 토큰 한도</span>
+                <input name="proactiveDailyTokenLimit" type="number" min="0" step="500" />
+                <small>개인 선톡, 자동 음성 말걸기와 단톡 자율 대화에 적용해. 0이면 제한 없음</small>
+              </label>
+              <label>
+                <span>응답 출력 상한</span>
+                <input name="maxOutputTokens" type="number" min="300" max="2000" step="50" />
+                <small>기본 700토큰</small>
+              </label>
+            </div>
+
+            <div class="usage-panel">
+              <div class="usage-panel-header">
+                <span>
+                  <b>OpenAI API 사용량</b>
+                  <small id="usageModeNote">토큰 한도와 예상 요금은 이 사용량에만 적용해.</small>
+                </span>
+                <div class="usage-panel-actions">
+                  <button id="openEventDiagnosticsButton" type="button">선톡·대화 로그</button>
+                  <button id="resetUsageButton" type="button">초기화</button>
+                </div>
+              </div>
+              <div class="usage-grid">
+                <div><small>누적 전체</small><strong id="usageTotal">0</strong></div>
+                <div><small>누적 입력</small><strong id="usageInput">0</strong></div>
+                <div><small>누적 출력</small><strong id="usageOutput">0</strong></div>
+                <div><small>요청</small><strong id="usageRequests">0</strong></div>
+                <div><small>누적 예상 비용</small><strong id="usageCost">$0.00</strong></div>
+              </div>
+              <p id="usageLast">아직 실제 API 요청 기록이 없어.</p>
+              <p id="usagePeriod"></p>
+              <p id="usageDetails"></p>
+            </div>
+
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>로컬 음성 서버</b>
+              <small>별도로 실행한 Style-Bert-VITS2 API 서버에 연결해. 음성 합성 자체에는 API 요금이 없어.</small>
+            </div>
+            <label>
+              <span>SBV2 서버 주소</span>
+              <input name="sbv2Endpoint" type="url" placeholder="http://127.0.0.1:5000" />
+              <small>보안을 위해 localhost 또는 127.0.0.1 주소만 허용해.</small>
+            </label>
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>백그라운드 실행</b>
+              <small>창을 닫았을 때 선톡, 알림과 자동 음성이 어떻게 동작할지 정해.</small>
+            </div>
+            <div class="toggle-group">
+              <label class="toggle-row">
+                <span>
+                  <b>트레이에서 계속 실행</b>
+                  <small>창을 닫아도 선톡과 알림을 받을 수 있어.</small>
+                </span>
+                <input type="checkbox" name="keepInTray" />
+              </label>
+              <label class="toggle-row">
+                <span>
+                  <b>Windows 로그인 시 시작</b>
+                  <small>컴퓨터를 켜면 창 없이 조용히 시작해.</small>
+                </span>
+                <input type="checkbox" name="launchAtLogin" />
+              </label>
+              <label class="toggle-row">
+                <span>
+                  <b>백그라운드에서도 소리 재생</b>
+                  <small>창이 숨겨졌거나 다른 작업 중이어도 새 음성을 자동 재생해.</small>
+                </span>
+                <input type="checkbox" name="playVoiceInBackground" />
+              </label>
+              <label class="toggle-row">
+                <span>
+                  <b>알림에 메시지 내용 표시</b>
+                  <small>끄면 친구 이름과 새 메시지 도착 여부만 보여.</small>
+                </span>
+                <input type="checkbox" name="showNotificationPreview" />
+              </label>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>백업 및 복원</b>
+              <small>친구 설정, 대화, 기억과 사용량을 JSON 파일로 옮겨.</small>
+            </div>
+            <div class="backup-actions">
+              <button id="exportBackupButton" type="button">백업 내보내기</button>
+              <button id="importBackupButton" type="button">백업 불러오기</button>
+            </div>
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>대화 기록 관리</b>
+              <small>메시지 내용을 직접 정리해야 할 때만 켜.</small>
+            </div>
+            <label class="toggle-row">
+              <span>
+                <b>메시지 수정·삭제 허용</b>
+                <small>켜면 내 메시지와 AI 메시지에 수정·삭제 버튼이 나타나. 변경한 내용은 이후 AI 대화 문맥에도 반영돼.</small>
+              </span>
+              <input type="checkbox" name="messageHistoryEditingEnabled" />
+            </label>
+            <small>기본값은 꺼짐이야. 수정하거나 삭제해도 AI 답장을 새로 생성하지 않으며, AI 메시지를 수정하면 기존 음성은 제거돼.</small>
+          </section>
+
+          <section class="settings-section">
+            <div class="section-heading">
+              <b>방해 금지 시간</b>
+              <small>이 시간에는 개인 선톡, 자동 음성 말걸기와 단톡 자율 대화를 시작하지 않아.</small>
+            </div>
+            <div class="form-grid two">
+              <label><span>시작</span><input name="quietStart" type="time" /></label>
+              <label><span>종료</span><input name="quietEnd" type="time" /></label>
+            </div>
+          </section>
+
+          <div class="modal-actions align-right">
+            <button type="submit" class="primary-button">앱 설정 저장</button>
+          </div>
+        </form>
+      </section>
+    </div>
+
+    <div id="memoryModalBackdrop" class="modal-backdrop hidden">
+      <section class="settings-modal memory-modal" role="dialog" aria-modal="true" aria-labelledby="memoryTitle">
+        <div class="modal-header">
+          <div>
+            <span class="eyebrow">WHAT THEY REMEMBER</span>
+            <h2 id="memoryTitle">기억 관리</h2>
+          </div>
+          <button id="closeMemoryButton" class="icon-button" aria-label="기억 닫기">×</button>
+        </div>
+        <p class="memory-help">AI가 대화에서 저장한 기억과 직접 추가한 기억을 관리해. 직접 수정한 기억은 원래 메시지와 분리돼.</p>
+        <form id="memoryCreateForm" class="memory-create-form">
+          <select name="category" aria-label="새 기억 분류">
+            <option value="profile">사용자 정보</option>
+            <option value="preference">취향</option>
+            <option value="ongoing">진행 중인 일</option>
+            <option value="shared_event">함께한 사건</option>
+          </select>
+          <input name="text" type="text" maxlength="240" placeholder="친구가 기억할 내용" aria-label="새 기억 내용" />
+          <label><input type="checkbox" name="pinned" checked /> 고정</label>
+          <button type="submit">추가</button>
+        </form>
+        <div id="memoryList" class="memory-list"></div>
+      </section>
+    </div>
+
+    <div id="toast" class="toast hidden" role="status" aria-live="polite"></div>
+
+    <script src="./chat-scroll.js"></script>
+    <script src="./voice-player.js"></script>
+    <script src="./audio-queue.js"></script>
+    <script src="./traits.js"></script>
+    <script src="./renderer/settings-data.js"></script>
+    <script src="./renderer/settings-ui.js"></script>
+    <script src="./renderer/chat-view.js"></script>
+    <script src="./demo-harness.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>

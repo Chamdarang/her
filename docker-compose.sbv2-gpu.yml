@@ -1,0 +1,29 @@
+services:
+  sbv2:
+    build:
+      context: ./docker/sbv2-gpu
+      dockerfile: Dockerfile
+    container_name: her-sbv2-gpu
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5000:5000"
+    volumes:
+      - ./sbv2-data/model_assets:/models
+      - sbv2-huggingface-cache:/cache/huggingface
+    shm_size: "2gb"
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://127.0.0.1:5000/models/info"]
+      interval: 20s
+      timeout: 10s
+      retries: 12
+      start_period: 10m
+
+volumes:
+  sbv2-huggingface-cache:
