@@ -183,11 +183,16 @@
               <select name="gender">
                 <option>여성</option>
                 <option>남성</option>
-                <option>논바이너리</option>
                 <option>설정하지 않음</option>
               </select>
             </label>
           </div>
+
+          <label>
+            <span>나이</span>
+            <input name="age" type="number" min="0" max="120" placeholder="선택 사항" />
+            <small>0 또는 빈칸이면 프롬프트에 보내지 않아. 사용자와의 나이 차이와 말투를 판단할 때 참고해.</small>
+          </label>
 
           <label>
             <span class="label-with-action">
@@ -486,7 +491,7 @@
               <label>
                 <span>성별</span>
                 <select name="userGender">
-                  <option>여성</option><option>남성</option><option>논바이너리</option><option>설정하지 않음</option>
+                  <option>여성</option><option>남성</option><option>설정하지 않음</option>
                 </select>
               </label>
             </div>
@@ -678,17 +683,21 @@
           </div>
           <button id="closeMemoryButton" class="icon-button" aria-label="기억 닫기">×</button>
         </div>
-        <p class="memory-help">AI가 대화에서 저장한 기억과 직접 추가한 기억을 관리해. 직접 수정한 기억은 원래 메시지와 분리돼.</p>
+        <p class="memory-help">이 친구만 참고하는 기억이야. 분류는 목록을 정리하기 위한 표시일 뿐, 기억의 중요도나 답장 방식은 바꾸지 않아.</p>
         <form id="memoryCreateForm" class="memory-create-form">
           <select name="category" aria-label="새 기억 분류">
-            <option value="profile">사용자 정보</option>
-            <option value="preference">취향</option>
-            <option value="ongoing">진행 중인 일</option>
-            <option value="shared_event">함께한 사건</option>
+            <option value="profile">기본 정보</option>
+            <option value="preference">좋아함·싫어함</option>
+            <option value="ongoing">요즘 하는 일</option>
+            <option value="shared_event">함께 나눈 기억</option>
           </select>
           <input name="text" type="text" maxlength="240" placeholder="친구가 기억할 내용" aria-label="새 기억 내용" />
-          <label><input type="checkbox" name="pinned" checked /> 고정</label>
+          <label title="기억이 많아도 AI가 먼저 참고해"><input type="checkbox" name="pinned" checked /> 우선 참고</label>
           <button type="submit">추가</button>
+          <div class="memory-category-guide">
+            <b id="memoryCategoryLabel">기본 정보</b>
+            <small id="memoryCategoryHelp">사는 곳, 직업, 가족처럼 오래 유지되는 사실</small>
+          </div>
         </form>
         <div id="memoryList" class="memory-list"></div>
       </section>

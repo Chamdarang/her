@@ -20,7 +20,7 @@ test("preset matching is exact and the save key list includes voice settings", (
   const preset = FRIEND_PRESETS.slow_burn;
   assert.equal(matchingPreset({ ...preset }), "slow_burn");
   assert.equal(matchingPreset({ ...preset, warmth: preset.warmth + 1 }), undefined);
-  for (const key of ["name", "character", "proactiveEnabled", "voiceEnabled", "voiceStyle"]) {
+  for (const key of ["name", "age", "character", "proactiveEnabled", "voiceEnabled", "voiceStyle"]) {
     assert.ok(FRIEND_SETTING_KEYS.includes(key));
   }
 });

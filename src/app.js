@@ -355,7 +355,9 @@ function render() {
   $("#emptyAvatar").textContent = avatar;
   $("#genderLabel").textContent = state.room?.type === "group"
     ? `${state.room.participantNames.length}명 단톡`
-    : settings.gender;
+    : [settings.gender, Number(settings.age) > 0 ? `${settings.age}세` : null]
+        .filter(Boolean)
+        .join(" · ");
   $("#memoryButton").textContent = `기억 ${state.memories?.length || 0}`;
   $("#memoryButton").classList.toggle("hidden", state.room?.type === "group");
   $("#settingsButton").setAttribute(
@@ -516,6 +518,7 @@ function openFriendSettings(createNew = false) {
   if (creatingFriend) {
     applyPreset("casual_female");
     refs.friendForm.elements.name.value = "새 친구";
+    refs.friendForm.elements.age.value = "";
     setDiscreteValue("closeness", 50);
     setDiscreteValue("trust", 50);
     refs.friendForm.elements.proactiveEnabled.checked = true;
@@ -562,7 +565,10 @@ function renderGroupParticipants(selectedIds = []) {
       <label class="participant-option">
         <input type="checkbox" name="participantIds" value="${escapeHtml(friend.id)}" ${selected.has(friend.id) ? "checked" : ""} />
         <span class="avatar">${escapeHtml(initials(friend.name))}</span>
-        <span><b>${escapeHtml(friend.name)}</b><small>${escapeHtml(friend.gender)}</small></span>
+        <span><b>${escapeHtml(friend.name)}</b><small>${escapeHtml([
+          friend.gender,
+          Number(friend.age) > 0 ? `${friend.age}세` : null
+        ].filter(Boolean).join(" · "))}</small></span>
       </label>
     `)
     .join("");
@@ -630,12 +636,30 @@ function closeAppSettings() {
   closeModal(refs.appModal);
 }
 
-const MEMORY_CATEGORY_LABELS = {
-  profile: "사용자 정보",
-  preference: "취향",
-  ongoing: "진행 중인 일",
-  shared_event: "함께한 사건"
+const MEMORY_CATEGORIES = {
+  profile: {
+    label: "기본 정보",
+    description: "사는 곳, 직업, 가족처럼 오래 유지되는 사실"
+  },
+  preference: {
+    label: "좋아함·싫어함",
+    description: "좋아하거나 싫어하는 음식, 취미, 작품과 대화 방식"
+  },
+  ongoing: {
+    label: "요즘 하는 일",
+    description: "최근 진행 중인 계획, 공부, 프로젝트나 계속되는 고민"
+  },
+  shared_event: {
+    label: "함께 나눈 기억",
+    description: "이 친구와 대화하며 생긴 약속, 사건이나 둘만 아는 농담"
+  }
 };
+
+function updateMemoryCategoryGuide() {
+  const category = MEMORY_CATEGORIES[refs.memoryCreateForm.elements.category.value];
+  $("#memoryCategoryLabel").textContent = category?.label || "기억 분류";
+  $("#memoryCategoryHelp").textContent = category?.description || "목록을 정리하기 위한 표시";
+}
 
 function renderMemories() {
   const memories = [...(state.memories || [])].sort(
@@ -652,10 +676,10 @@ function renderMemories() {
       (memory) => `
         <div class="memory-item" data-memory-id="${escapeHtml(memory.id)}">
           <select data-memory-field="category">
-            ${Object.entries(MEMORY_CATEGORY_LABELS)
+            ${Object.entries(MEMORY_CATEGORIES)
               .map(
-                ([value, label]) =>
-                  `<option value="${value}" ${memory.category === value ? "selected" : ""}>${label}</option>`
+                ([value, category]) =>
+                  `<option value="${value}" ${memory.category === value ? "selected" : ""}>${category.label}</option>`
               )
               .join("")}
           </select>
@@ -672,6 +696,7 @@ function renderMemories() {
 
 function openMemoryModal() {
   renderMemories();
+  updateMemoryCategoryGuide();
   openModal(refs.memoryModal, focusableElements(refs.memoryModal)[0]);
 }
 
@@ -941,6 +966,7 @@ refs.friendForm.addEventListener("submit", async (event) => {
   for (const key of ["voiceModelId", "voiceSpeakerId", "voiceStyleWeight", "voiceLength", "ambientMaxConsecutive"]) {
     settings[key] = Number(settings[key]);
   }
+  settings.age = Math.max(0, Math.min(120, Math.round(Number(settings.age || 0))));
   try {
     state = creatingFriend
       ? await window.her.createFriend(settings)
@@ -1274,6 +1300,8 @@ refs.memoryCreateForm.addEventListener("submit", async (event) => {
     button.disabled = false;
   }
 });
+
+refs.memoryCreateForm.elements.category.addEventListener("change", updateMemoryCategoryGuide);
 
 refs.memoryList.addEventListener("click", async (event) => {
   const button = event.target.closest("[data-memory-action]");

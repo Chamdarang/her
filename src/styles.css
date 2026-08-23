@@ -915,6 +915,15 @@ button { color: inherit; }
 .memory-create-form input[type="text"] { min-width: 0; }
 .memory-create-form label { display: flex; align-items: center; gap: 5px; white-space: nowrap; font-size: 10px; }
 .memory-create-form button { padding: 9px 13px; border: 0; border-radius: 10px; background: var(--ink); color: white; cursor: pointer; }
+.memory-category-guide {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+  color: var(--muted);
+  font-size: 9px;
+}
+.memory-category-guide b { flex: 0 0 auto; color: var(--ink); font-size: 9px; }
 .memory-list { display: flex; flex-direction: column; gap: 9px; }
 .memory-empty { padding: 35px; color: var(--muted); text-align: center; font-size: 11px; }
 .memory-item {

@@ -9,6 +9,7 @@
   const FRIEND_SETTING_KEYS = [
     "name",
     "gender",
+    "age",
     "character",
     "playfulness",
     "warmth",

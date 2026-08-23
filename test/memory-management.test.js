@@ -42,3 +42,12 @@ test("manually created memories are independent from conversation messages", () 
   });
   assert.match(main, /Object\.hasOwn\(changes \|\| \{\}, "text"\) \? \{ sourceMessageId: null \}/);
 });
+
+test("memory categories use plain labels and explain that only pinning changes priority", () => {
+  for (const label of ["기본 정보", "좋아함·싫어함", "요즘 하는 일", "함께 나눈 기억"]) {
+    assert.ok(`${html}\n${app}`.includes(label));
+  }
+  assert.match(html, /분류는 목록을 정리하기 위한 표시일 뿐/);
+  assert.match(html, /우선 참고/);
+  assert.match(app, /function updateMemoryCategoryGuide\(\)/);
+});

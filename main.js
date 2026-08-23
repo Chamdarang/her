@@ -261,6 +261,7 @@ function friendSummary(friend) {
     id: friend.id,
     name: friend.profile.name,
     gender: friend.profile.gender,
+    age: friend.profile.age,
     proactiveEnabled: friend.profile.proactiveEnabled,
     voiceEnabled: friend.profile.voiceEnabled,
     mood: friend.relationship.mood
@@ -674,11 +675,40 @@ function syncLoginItemSettings(enabled) {
   if (process.platform !== "win32" || !app.isPackaged) return;
   const args = ["--hidden"];
   const executablePath = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  if (!enabled) {
+    const knownNames = new Set([APP_ID, app.getName(), "HER", "her-ai-friend"]);
+    const launchItems = app.getLoginItemSettings({ path: executablePath }).launchItems || [];
+    for (const item of launchItems) {
+      const sameExecutable = path.resolve(item.path || "") === path.resolve(executablePath);
+      if (!sameExecutable && !knownNames.has(item.name)) continue;
+      app.setLoginItemSettings({
+        openAtLogin: false,
+        enabled: false,
+        name: item.name,
+        path: item.path || executablePath,
+        args: item.args || []
+      });
+    }
+  }
   app.setLoginItemSettings({
     openAtLogin: Boolean(enabled),
+    enabled: Boolean(enabled),
+    name: APP_ID,
     path: executablePath,
     args
   });
+}
+
+function loginItemIsEnabled() {
+  if (process.platform !== "win32" || !app.isPackaged) {
+    return Boolean(state?.appSettings?.launchAtLogin);
+  }
+  const executablePath = process.env.PORTABLE_EXECUTABLE_FILE || process.execPath;
+  const loginItem = app.getLoginItemSettings({
+    path: executablePath,
+    args: ["--hidden"]
+  });
+  return Boolean(loginItem.openAtLogin && loginItem.executableWillLaunchAtLogin);
 }
 
 function setThinking(value) {
@@ -1896,6 +1926,8 @@ app.whenReady().then(() => {
   createWindow();
   ensureTray();
   syncLoginItemSettings(state.appSettings.launchAtLogin);
+  state.appSettings.launchAtLogin = loginItemIsEnabled();
+  saveState();
   scheduler = setInterval(tick, 1000);
 
   for (const friend of state.friends) {
@@ -2023,6 +2055,13 @@ app.whenReady().then(() => {
     for (const key of Object.keys(PROFILE_DEFAULTS)) {
       if (Object.hasOwn(incoming, key)) friend.profile[key] = incoming[key];
     }
+    friend.profile.gender = ["여성", "남성", "설정하지 않음"].includes(friend.profile.gender)
+      ? friend.profile.gender
+      : "설정하지 않음";
+    friend.profile.age = Math.max(
+      0,
+      Math.min(120, Math.round(Number(friend.profile.age || 0)))
+    );
     friend.relationship.closeness = clampScore(
       incoming.closeness,
       friend.relationship.closeness
@@ -2092,6 +2131,7 @@ app.whenReady().then(() => {
       friend.nextNudgeAt = new Date(Date.now() + initialNudgeDelayMs(ambientVoiceActive(friend))).toISOString();
     }
     syncLoginItemSettings(state.appSettings.launchAtLogin);
+    state.appSettings.launchAtLogin = loginItemIsEnabled();
     updateTrayMenu();
     broadcast();
     return publicState();

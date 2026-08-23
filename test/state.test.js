@@ -89,3 +89,25 @@ test("modern state migration normalizes friends and ignores obsolete local usage
   assert.equal(state.usage.totalTokens, 12);
   assert.equal("localUsage" in state, false);
 });
+
+test("friend age is bounded and removed gender values migrate safely", () => {
+  const state = modernStateFromLoaded(
+    {
+      version: STATE_VERSION,
+      appSettings: { userGender: "논바이너리" },
+      friends: [{
+        id: "friend-1",
+        profile: { name: "민", gender: "논바이너리", age: 999 },
+        messages: [],
+        memories: []
+      }],
+      activeFriendId: "friend-1",
+      usage: {}
+    },
+    () => "generated"
+  );
+
+  assert.equal(state.friends[0].profile.gender, "설정하지 않음");
+  assert.equal(state.friends[0].profile.age, 120);
+  assert.equal(state.appSettings.userGender, "설정하지 않음");
+});

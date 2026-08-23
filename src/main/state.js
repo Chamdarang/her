@@ -23,7 +23,7 @@ function normalizeAppSettings(raw = {}) {
   const normalized = { ...APP_DEFAULTS, ...raw };
   normalized.messageHistoryEditingEnabled = raw.messageHistoryEditingEnabled === true;
   normalized.userName = String(raw.userName || "").trim().slice(0, 50);
-  normalized.userGender = ["여성", "남성", "논바이너리", "설정하지 않음"].includes(raw.userGender)
+  normalized.userGender = ["여성", "남성", "설정하지 않음"].includes(raw.userGender)
     ? raw.userGender
     : "설정하지 않음";
   normalized.userAge = Math.max(0, Math.min(120, Math.round(Number(raw.userAge || 0))));
@@ -73,6 +73,13 @@ function createFriendRecord(profile = {}, legacy = {}, createId) {
   delete relationship.currentActivity;
   delete relationship.activityExpiresAt;
   const normalizedProfile = { ...PROFILE_DEFAULTS, ...cleanProfile };
+  normalizedProfile.gender = ["여성", "남성", "설정하지 않음"].includes(normalizedProfile.gender)
+    ? normalizedProfile.gender
+    : "설정하지 않음";
+  normalizedProfile.age = Math.max(
+    0,
+    Math.min(120, Math.round(Number(normalizedProfile.age || 0)))
+  );
   if (!["quiet", "normal", "chatty"].includes(normalizedProfile.ambientVoiceFrequency)) {
     normalizedProfile.ambientVoiceFrequency = "normal";
   }

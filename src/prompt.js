@@ -55,12 +55,13 @@ function userProfileContext(userProfile = {}) {
 
 function stableFriendContext(friend, userProfile = {}) {
   const profile = friend.profile;
+  const age = Number(profile.age) > 0 ? `; 나이=${Number(profile.age)}세` : "";
   const romanticRule = profile.romanceAllowed
     ? "연애 감정은 정해 두지 않고 관계 속에서 천천히 생길 수 있음"
     : "친구 관계 고정, 플러팅·연애 유도 금지";
   return [
     "[전용 설정]",
-    `이름=${profile.name}; 성별=${profile.gender}; 말투=${speechStyleInstruction(profile)}; ${romanticRule}`,
+    `이름=${profile.name}; 성별=${profile.gender}${age}; 말투=${speechStyleInstruction(profile)}; ${romanticRule}`,
     "[사용자 프로필]",
     userProfileContext(userProfile),
     "[캐릭터 핵심]",

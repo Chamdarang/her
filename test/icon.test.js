@@ -30,5 +30,11 @@ test("npm start uses a HER-branded development executable", () => {
 test("Windows auto-start points at the packaged HER executable, never electron.exe", () => {
   assert.match(main, /process\.platform !== "win32" \|\| !app\.isPackaged/);
   assert.match(main, /syncLoginItemSettings\(state\.appSettings\.launchAtLogin\)/);
+  assert.match(main, /enabled: Boolean\(enabled\)/);
+  assert.match(main, /name: APP_ID/);
+  assert.match(main, /function loginItemIsEnabled\(\)/);
+  assert.match(main, /executableWillLaunchAtLogin/);
+  assert.match(main, /const launchItems = app\.getLoginItemSettings/);
+  assert.match(main, /sameExecutable/);
   assert.doesNotMatch(main, /app\.getAppPath\(\), "--hidden"/);
 });

@@ -31,3 +31,14 @@ test("closeness and trust are editable and included in saves", () => {
   assert.match(main, /friend\.relationship\.closeness = clampScore/);
   assert.match(main, /friend\.relationship\.trust = clampScore/);
 });
+
+test("friend age is optional and nonbinary is no longer a gender option", () => {
+  const html = read("src/index.html");
+  const app = read("src/app.js");
+  const prompt = read("src/prompt.js");
+
+  assert.match(html, /name="age" type="number" min="0" max="120"/);
+  assert.doesNotMatch(html, /논바이너리/);
+  assert.match(app, /settings\.age = Math\.max/);
+  assert.match(prompt, /나이=\$\{Number\(profile\.age\)\}세/);
+});
